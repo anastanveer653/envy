@@ -11,10 +11,10 @@
 
 **Smart `.env` manager for developers**
 
-[![Release](https://img.shields.io/github/v/release/user/envy?style=flat-square&color=00b4d8)](https://github.com/user/envy/releases)
+[![Release](https://img.shields.io/github/v/release/anastanveer653/envy?style=flat-square&color=00b4d8)](https://github.com/anastanveer653/envy/releases)
 [![Go Version](https://img.shields.io/badge/go-1.21+-00b4d8?style=flat-square)](https://go.dev)
 [![License](https://img.shields.io/badge/license-MIT-00b4d8?style=flat-square)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/user/envy?style=flat-square&color=00b4d8)](https://github.com/user/envy/stargazers)
+[![Stars](https://img.shields.io/github/stars/anastanveer653/envy?style=flat-square&color=00b4d8)](https://github.com/anastanveer653/envy/stargazers)
 
 </div>
 
@@ -49,7 +49,7 @@ Every developer has been here:
 
 **macOS / Linux (one line):**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/user/envy/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/anastanveer653/envy/main/install.sh | bash
 ```
 
 **Homebrew:**
@@ -59,10 +59,10 @@ brew install user/tap/envy
 
 **Go:**
 ```bash
-go install github.com/user/envy@latest
+go install github.com/anastanveer653/envy@latest
 ```
 
-**Windows:** Download from [releases page](https://github.com/user/envy/releases)
+**Windows:** Download from [releases page](https://github.com/anastanveer653/envy/releases)
 
 ---
 
@@ -155,7 +155,7 @@ To report a security vulnerability, please email security@example.com (do not op
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 ```bash
-git clone https://github.com/user/envy
+git clone https://github.com/anastanveer653/envy
 cd envy
 go mod download
 go build .
