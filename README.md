@@ -166,7 +166,7 @@ go build .
 
 ## License
 
-MIT © [Your Name](https://github.com/user)
+MIT © [Anas Tanveer](https://github.com/anastanveer653)
 
 ---
 
