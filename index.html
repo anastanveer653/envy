@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>envy — Smart .env manager for developers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #080c10;
+    --bg2: #0d1117;
+    --bg3: #131920;
+    --border: rgba(0,180,216,0.12);
+    --border2: rgba(0,180,216,0.25);
+    --cyan: #00b4d8;
+    --cyan-dim: rgba(0,180,216,0.15);
+    --cyan-glow: rgba(0,180,216,0.08);
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #484f58;
+    --green: #3fb950;
+    --red: #f85149;
+    --yellow: #d29922;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,180,216,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,180,216,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0;
+    background: rgba(8,12,16,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+    padding: 14px 0;
+  }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; max-width: 900px; margin: 0 auto; padding: 0 24px; }
+  .nav-logo { font-family: var(--sans); font-weight: 800; font-size: 20px; color: var(--cyan); letter-spacing: -0.5px; }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a { color: var(--text2); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--cyan); }
+  .nav-cta {
+    background: var(--cyan); color: #000;
+    padding: 7px 18px; border-radius: 6px;
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    text-decoration: none; transition: opacity 0.2s;
+  }
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 120px 24px 80px;
+  }
+  .hero-inner { max-width: 700px; }
+
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--cyan-dim); border: 1px solid var(--border2);
+    color: var(--cyan); font-size: 12px; padding: 5px 14px;
+    border-radius: 20px; margin-bottom: 32px;
+    animation: fadeUp 0.5s ease both;
+  }
+  .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cyan); animation: pulse 2s infinite; }
+
+  .hero-logo {
+    font-family: var(--mono); font-size: clamp(11px, 2vw, 14px);
+    color: var(--cyan); line-height: 1.3;
+    white-space: pre; letter-spacing: 0;
+    margin-bottom: 32px;
+    animation: fadeUp 0.5s 0.1s ease both;
+    opacity: 0;
+    text-shadow: 0 0 30px rgba(0,180,216,0.4);
+  }
+
+  .hero-tagline {
+    font-family: var(--sans); font-size: clamp(28px, 6vw, 52px);
+    font-weight: 800; line-height: 1.15; letter-spacing: -1px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.5s 0.2s ease both;
+    opacity: 0;
+  }
+  .hero-tagline span { color: var(--cyan); }
+
+  .hero-sub {
+    color: var(--text2); font-size: 16px; max-width: 520px; margin: 0 auto 40px;
+    animation: fadeUp 0.5s 0.3s ease both;
+    opacity: 0;
+    font-family: var(--sans);
+  }
+
+  .hero-install {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 16px 24px;
+    display: inline-flex; align-items: center; gap: 12px;
+    margin-bottom: 40px;
+    animation: fadeUp 0.5s 0.4s ease both;
+    opacity: 0;
+    cursor: pointer; transition: border-color 0.2s;
+    position: relative;
+  }
+  .hero-install:hover { border-color: var(--cyan); }
+  .install-prompt { color: var(--text3); font-size: 13px; }
+  .install-cmd { color: var(--cyan); font-size: 14px; }
+  .copy-btn {
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 11px; font-family: var(--mono);
+    padding: 3px 8px; border: 1px solid var(--border);
+    border-radius: 4px; transition: all 0.2s;
+  }
+  .copy-btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .copy-success { color: var(--green) !important; border-color: var(--green) !important; }
+
+  .hero-btns {
+    display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+    animation: fadeUp 0.5s 0.5s ease both;
+    opacity: 0;
+  }
+  .btn-primary {
+    background: var(--cyan); color: #000;
+    padding: 12px 28px; border-radius: 8px;
+    font-family: var(--sans); font-weight: 700; font-size: 14px;
+    text-decoration: none; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,180,216,0.3); }
+  .btn-secondary {
+    background: transparent; color: var(--text);
+    padding: 12px 28px; border-radius: 8px; border: 1px solid var(--border2);
+    font-family: var(--sans); font-weight: 600; font-size: 14px;
+    text-decoration: none; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .btn-secondary:hover { border-color: var(--cyan); color: var(--cyan); }
+
+  /* TERMINAL DEMO */
+  .terminal-section { padding: 80px 0; }
+  .section-label {
+    font-family: var(--sans); font-size: 12px; font-weight: 600;
+    color: var(--cyan); text-transform: uppercase; letter-spacing: 3px;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-family: var(--sans); font-size: clamp(24px, 4vw, 36px);
+    font-weight: 800; margin-bottom: 48px; letter-spacing: -0.5px;
+  }
+
+  .terminal {
+    background: #0d1117;
+    border: 1px solid var(--border2);
+    border-radius: 12px; overflow: hidden;
+  }
+  .terminal-bar {
+    background: #161b22; padding: 12px 16px;
+    display: flex; align-items: center; gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #ffbd2e; }
+  .dot-g { background: #28ca42; }
+  .terminal-title { color: var(--text3); font-size: 12px; margin-left: 8px; }
+  .terminal-body { padding: 24px; font-size: 13px; line-height: 2; }
+  .t-prompt { color: var(--cyan); }
+  .t-cmd { color: var(--text); }
+  .t-comment { color: var(--text3); }
+  .t-output { color: var(--text2); }
+  .t-success { color: var(--green); }
+  .t-key { color: #79c0ff; }
+  .t-val { color: #a5d6ff; }
+  .t-masked { color: var(--text3); }
+  .t-warn { color: var(--yellow); }
+  .t-title { color: var(--cyan); font-weight: 700; }
+  .tl { display: block; }
+
+  /* FEATURES */
+  .features-section { padding: 80px 0; }
+  .features-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .feature-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px;
+    transition: all 0.2s;
+  }
+  .feature-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+  .feature-icon {
+    font-size: 24px; margin-bottom: 12px;
+    width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+    background: var(--cyan-dim); border-radius: 10px;
+  }
+  .feature-title { font-family: var(--sans); font-weight: 700; font-size: 16px; margin-bottom: 8px; }
+  .feature-desc { color: var(--text2); font-size: 13px; line-height: 1.7; font-family: var(--sans); }
+
+  /* COMPARISON */
+  .compare-section { padding: 80px 0; }
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .compare-table th {
+    padding: 14px 16px; text-align: left;
+    border-bottom: 1px solid var(--border2);
+    font-family: var(--sans); font-weight: 700;
+    color: var(--text2); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .compare-table th.hl { color: var(--cyan); }
+  .compare-table td {
+    padding: 12px 16px; border-bottom: 1px solid var(--border);
+    color: var(--text2);
+  }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table td:first-child { color: var(--text); font-weight: 500; }
+  .compare-table td.hl { background: var(--cyan-glow); color: var(--text); font-weight: 500; }
+  .yes { color: var(--green); }
+  .no { color: var(--text3); }
+
+  /* INSTALL */
+  .install-section { padding: 80px 0; }
+  .install-tabs { display: flex; gap: 0; margin-bottom: 0; }
+  .tab-btn {
+    background: var(--bg2); border: 1px solid var(--border);
+    color: var(--text2); padding: 8px 20px;
+    font-family: var(--mono); font-size: 13px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn:first-child { border-radius: 8px 0 0 0; }
+  .tab-btn:last-child { border-radius: 0 8px 0 0; }
+  .tab-btn.active { background: var(--bg3); color: var(--cyan); border-color: var(--border2); border-bottom-color: var(--bg3); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  .code-block {
+    background: var(--bg3); border: 1px solid var(--border2);
+    border-radius: 0 8px 8px 8px; padding: 20px 24px;
+    font-size: 14px; color: var(--cyan); overflow-x: auto;
+    position: relative;
+  }
+  .code-copy {
+    position: absolute; top: 12px; right: 12px;
+    background: none; border: 1px solid var(--border);
+    color: var(--text3); padding: 4px 10px;
+    border-radius: 4px; cursor: pointer; font-family: var(--mono); font-size: 11px;
+    transition: all 0.2s;
+  }
+  .code-copy:hover { color: var(--cyan); border-color: var(--cyan); }
+
+  /* CTA */
+  .cta-section {
+    padding: 100px 0; text-align: center;
+    border-top: 1px solid var(--border);
+  }
+  .cta-title {
+    font-family: var(--sans); font-size: clamp(28px, 5vw, 48px);
+    font-weight: 800; margin-bottom: 16px; letter-spacing: -1px;
+  }
+  .cta-sub {
+    color: var(--text2); font-size: 16px; margin-bottom: 40px;
+    font-family: var(--sans); max-width: 400px; margin-left: auto; margin-right: auto;
+    margin-bottom: 40px;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0; text-align: center;
+    color: var(--text3); font-size: 12px;
+  }
+  footer a { color: var(--text2); text-decoration: none; }
+  footer a:hover { color: var(--cyan); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  @media (max-width: 600px) {
+    .nav-links { display: none; }
+    .hero-logo { font-size: 9px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="nav-logo">envy</div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#demo">Demo</a>
+      <a href="#install">Install</a>
+      <a href="https://github.com/user/envy">Docs</a>
+    </div>
+    <a href="https://github.com/user/envy" class="nav-cta">★ Star on GitHub</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <div class="badge-dot"></div>
+      v1.0.0 — Now available
+    </div>
+
+    <pre class="hero-logo">  ███████╗███╗   ██╗██╗   ██╗██╗   ██╗
+  ██╔════╝████╗  ██║██║   ██║╚██╗ ██╔╝
+  █████╗  ██╔██╗ ██║██║   ██║ ╚████╔╝ 
+  ██╔══╝  ██║╚██╗██║╚██╗ ██╔╝  ╚██╔╝  
+  ███████╗██║ ╚████║ ╚████╔╝    ██║   
+  ╚══════╝╚═╝  ╚═══╝  ╚═══╝     ╚═╝   </pre>
+
+    <h1 class="hero-tagline">Never leak a secret <span>again.</span></h1>
+    <p class="hero-sub">AES-256 encrypted .env management for teams and solo devs. Compare environments, audit git history, ship safely.</p>
+
+    <div class="hero-install">
+      <span class="install-prompt">$</span>
+      <span class="install-cmd" id="install-cmd">curl -fsSL https://raw.githubusercontent.com/user/envy/main/install.sh | bash</span>
+      <button class="copy-btn" id="copy-install" onclick="copyInstall()">copy</button>
+    </div>
+
+    <div class="hero-btns">
+      <a href="https://github.com/user/envy" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        View on GitHub
+      </a>
+      <a href="#demo" class="btn-secondary">
+        See demo →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- DEMO -->
+<section class="terminal-section" id="demo">
+  <div class="wrap">
+    <div class="section-label">Live demo</div>
+    <div class="section-title">See envy in action</div>
+
+    <div class="terminal">
+      <div class="terminal-bar">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <span class="terminal-title">~/my-project</span>
+      </div>
+      <div class="terminal-body">
+        <span class="tl t-comment"># Initialize envy in your project</span>
+        <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy init</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl"><span class="t-title">⚡ Initializing envy in ~/my-project</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl"><span class="t-output">  Create master password: </span><span class="t-masked">••••••••••••</span></span>
+        <span class="tl"><span class="t-output">  Confirm master password: </span><span class="t-masked">••••••••••••</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl"><span class="t-success">  ✓ Encrypted store created</span></span>
+        <span class="tl"><span class="t-success">  ✓ Environments: development, staging, production</span></span>
+        <span class="tl"><span class="t-success">  ✓ Added .envy/store.enc to .gitignore</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl t-comment"># Store a secret (encrypted with AES-256)</span>
+        <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy set DATABASE_URL postgres://user:pass@db.prod.com/app --env production</span></span>
+        <span class="tl"><span class="t-output">  Master password: </span><span class="t-masked">••••••••••••</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl"><span class="t-success">  ✓ </span><span class="t-key">DATABASE_URL</span><span class="t-output"> → </span><span class="t-masked">[encrypted] in production</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl t-comment"># List secrets (values safely masked)</span>
+        <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy list --env production</span></span>
+        <span class="tl"><span class="t-output">  Master password: </span><span class="t-masked">••••••••••••</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl"><span class="t-title">  Environment: </span><span class="t-val">production</span><span class="t-output"> (3 secrets)</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl"><span class="t-key">  API_KEY</span><span class="t-output"> = </span><span class="t-masked">sk**************23</span></span>
+        <span class="tl"><span class="t-key">  APP_NAME</span><span class="t-output"> = </span><span class="t-masked">my**app</span></span>
+        <span class="tl"><span class="t-key">  DATABASE_URL</span><span class="t-output"> = </span><span class="t-masked">po**********************************pp</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl t-comment"># Compare dev vs production — find missing keys</span>
+        <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy diff development production</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl"><span class="t-title">  development</span><span class="t-output"> vs </span><span class="t-title">production</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl"><span class="t-success">  + SENTRY_DSN</span><span class="t-output"> (only in production)</span></span>
+        <span class="tl"><span class="t-warn">  ~ DATABASE_URL</span><span class="t-output"> (values differ)</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl t-comment"># Audit git history for leaked secrets</span>
+        <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy audit</span></span>
+        <span class="tl"><span class="t-title">  🔍 Scanning git history for secrets...</span></span>
+        <span class="tl">&nbsp;</span>
+        <span class="tl"><span class="t-success">  ✓ No secrets found in git history!</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features-section" id="features">
+  <div class="wrap">
+    <div class="section-label">Features</div>
+    <div class="section-title">Everything you need. Nothing you don't.</div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">AES-256-GCM Encryption</div>
+        <div class="feature-desc">Military-grade encryption with PBKDF2 key derivation. 100,000 iterations. Unique salt per store. Your master password never touches disk.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌍</div>
+        <div class="feature-title">Multi-environment</div>
+        <div class="feature-desc">Manage development, staging, and production secrets separately in one encrypted store. Switch with --env or ENVY_ENV.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔍</div>
+        <div class="feature-title">Git Audit</div>
+        <div class="feature-desc">Scan your entire git history for accidentally committed .env files or hardcoded secrets. Detects AWS keys, GitHub tokens, Stripe keys, and more.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📋</div>
+        <div class="feature-title">Environment Diff</div>
+        <div class="feature-desc">Compare two environments side by side. Instantly spot missing keys, mismatched values, or config drift before it causes production incidents.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📥</div>
+        <div class="feature-title">Import / Export</div>
+        <div class="feature-desc">Seamlessly migrate from existing .env files. Export back when you need to. Works with dotenv, direnv, and any tool that reads .env format.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Single Binary</div>
+        <div class="feature-desc">No runtime. No Docker. No npm install. One binary written in Go. Instant startup. Works on macOS, Linux, and Windows. Zero dependencies.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARISON -->
+<section class="compare-section">
+  <div class="wrap">
+    <div class="section-label">Comparison</div>
+    <div class="section-title">How envy stacks up</div>
+    <div style="overflow-x: auto;">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th class="hl">envy</th>
+            <th>dotenv</th>
+            <th>direnv</th>
+            <th>1Password CLI</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Encryption</td>
+            <td class="hl"><span class="yes">✓ AES-256</span></td>
+            <td><span class="no">✗</span></td>
+            <td><span class="no">✗</span></td>
+            <td><span class="yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Multi-environment</td>
+            <td class="hl"><span class="yes">✓</span></td>
+            <td><span class="no">✗</span></td>
+            <td><span class="yes">✓</span></td>
+            <td><span class="yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Git audit</td>
+            <td class="hl"><span class="yes">✓</span></td>
+            <td><span class="no">✗</span></td>
+            <td><span class="no">✗</span></td>
+            <td><span class="no">✗</span></td>
+          </tr>
+          <tr>
+            <td>Env diff</td>
+            <td class="hl"><span class="yes">✓</span></td>
+            <td><span class="no">✗</span></td>
+            <td><span class="no">✗</span></td>
+            <td><span class="no">✗</span></td>
+          </tr>
+          <tr>
+            <td>Single binary</td>
+            <td class="hl"><span class="yes">✓</span></td>
+            <td><span class="no">✗</span></td>
+            <td><span class="yes">✓</span></td>
+            <td><span class="yes">✓</span></td>
+          </tr>
+          <tr>
+            <td>Free & open source</td>
+            <td class="hl"><span class="yes">✓ MIT</span></td>
+            <td><span class="yes">✓</span></td>
+            <td><span class="yes">✓</span></td>
+            <td><span class="no">✗ paid</span></td>
+          </tr>
+          <tr>
+            <td>No cloud required</td>
+            <td class="hl"><span class="yes">✓</span></td>
+            <td><span class="yes">✓</span></td>
+            <td><span class="yes">✓</span></td>
+            <td><span class="no">✗</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section class="install-section" id="install">
+  <div class="wrap">
+    <div class="section-label">Install</div>
+    <div class="section-title">Get started in 30 seconds</div>
+
+    <div class="install-tabs">
+      <button class="tab-btn active" onclick="showTab('curl')">curl</button>
+      <button class="tab-btn" onclick="showTab('brew')">brew</button>
+      <button class="tab-btn" onclick="showTab('go')">go</button>
+      <button class="tab-btn" onclick="showTab('win')">windows</button>
+    </div>
+
+    <div id="tab-curl" class="tab-content active">
+      <div class="code-block">
+        <button class="code-copy" onclick="copyCode('curl-cmd')">copy</button>
+        <span id="curl-cmd">curl -fsSL https://raw.githubusercontent.com/user/envy/main/install.sh | bash</span>
+      </div>
+    </div>
+    <div id="tab-brew" class="tab-content">
+      <div class="code-block">
+        <button class="code-copy" onclick="copyCode('brew-cmd')">copy</button>
+        <span id="brew-cmd">brew install user/tap/envy</span>
+      </div>
+    </div>
+    <div id="tab-go" class="tab-content">
+      <div class="code-block">
+        <button class="code-copy" onclick="copyCode('go-cmd')">copy</button>
+        <span id="go-cmd">go install github.com/user/envy@latest</span>
+      </div>
+    </div>
+    <div id="tab-win" class="tab-content">
+      <div class="code-block">
+        <button class="code-copy" onclick="copyCode('win-cmd')">copy</button>
+        <span id="win-cmd">Download envy.exe from the <a href="https://github.com/user/envy/releases" style="color:var(--cyan)">releases page</a></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="wrap">
+    <h2 class="cta-title">Stop leaking secrets.</h2>
+    <p class="cta-sub">Join developers who manage their .env files the right way.</p>
+    <div class="hero-btns" style="justify-content:center">
+      <a href="https://github.com/user/envy" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        Star on GitHub
+      </a>
+      <a href="#install" class="btn-secondary">Install now →</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>envy — MIT License — Built with Go ·
+      <a href="https://github.com/user/envy">GitHub</a> ·
+      <a href="https://github.com/user/envy/issues">Issues</a> ·
+      <a href="https://github.com/user/envy/blob/main/CONTRIBUTING.md">Contributing</a>
+    </p>
+  </div>
+</footer>
+
+<script>
+function copyInstall() {
+  const cmd = document.getElementById('install-cmd').textContent;
+  navigator.clipboard.writeText(cmd).then(() => {
+    const btn = document.getElementById('copy-install');
+    btn.textContent = 'copied!';
+    btn.classList.add('copy-success');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copy-success'); }, 2000);
+  });
+}
+
+function copyCode(id) {
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.textContent).then(() => {
+    const btn = el.closest('.code-block').querySelector('.code-copy');
+    btn.textContent = 'copied!';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(() => { btn.textContent = 'copy'; btn.style.color = ''; btn.style.borderColor = ''; }, 2000);
+  });
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>
