@@ -3,7 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>envy — Smart .env manager for developers</title>
+<title>envy: encrypted .env secrets manager</title>
+<meta name="description" content="envy keeps project secrets in one Argon2id + AES-256-GCM encrypted store, injects them with envy run, diffs environments and audits git history for leaked credentials.">
+<meta property="og:title" content="envy: encrypted .env secrets manager">
+<meta property="og:description" content="One binary. Encrypted multi-environment secrets, envy run, environment diff and git leak audit.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://anastanveer653.github.io/envy/">
+<meta name="theme-color" content="#080c10">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -320,7 +326,7 @@
       <a href="#features">Features</a>
       <a href="#demo">Demo</a>
       <a href="#install">Install</a>
-      <a href="https://github.com/anastanveer653/envy">Docs</a>
+      <a href="https://github.com/anastanveer653/envy#readme">Docs</a>
     </div>
     <a href="https://github.com/anastanveer653/envy" class="nav-cta">★ Star on GitHub</a>
   </div>
@@ -330,7 +336,7 @@
   <div class="hero-inner">
     <div class="hero-badge">
       <div class="badge-dot"></div>
-      v1.0.0 — Now available
+      v1.0.0: Argon2id, envy run, staged audits
     </div>
 
     <pre class="hero-logo">  ███████╗███╗   ██╗██╗   ██╗██╗   ██╗
@@ -341,16 +347,16 @@
   ╚══════╝╚═╝  ╚═══╝  ╚═══╝     ╚═╝   </pre>
 
     <h1 class="hero-tagline">Never leak a secret <span>again.</span></h1>
-    <p class="hero-sub">AES-256 encrypted .env management for teams and solo devs. Compare environments, audit git history, ship safely.</p>
+    <p class="hero-sub">Encrypted, multi-environment secrets for your projects. Run apps without plaintext .env files, catch config drift, and find credentials already leaked in git.</p>
 
     <div class="hero-install">
       <span class="install-prompt">$</span>
-      <span class="install-cmd" id="install-cmd">curl -fsSL https://raw.githubusercontent.com/anastanveer653/envy/main/install.sh | bash</span>
+      <span class="install-cmd" id="install-cmd">curl -fsSL https://raw.githubusercontent.com/anastanveer653/envy/main/install.sh | sh</span>
       <button class="copy-btn" id="copy-install" onclick="copyInstall()">copy</button>
     </div>
 
     <div class="hero-btns">
-      <a href="https://github.com/user/envy" class="btn-primary">
+      <a href="https://github.com/anastanveer653/envy" class="btn-primary">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
         View on GitHub
       </a>
@@ -375,47 +381,33 @@
         <span class="terminal-title">~/my-project</span>
       </div>
       <div class="terminal-body">
-        <span class="tl t-comment"># Initialize envy in your project</span>
+        <span class="tl t-comment"># Create an encrypted store for this project</span>
         <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy init</span></span>
+        <span class="tl"><span class="t-output">Create master password: </span><span class="t-masked">••••••••••••</span></span>
+        <span class="tl"><span class="t-output">Confirm master password: </span><span class="t-masked">••••••••••••</span></span>
+        <span class="tl"><span class="t-success">✓ Created .envy/store.enc</span></span>
+        <span class="tl"><span class="t-success">✓ Environments: development, staging, production</span></span>
+        <span class="tl"><span class="t-success">✓ Added .envy/ to .gitignore</span></span>
         <span class="tl">&nbsp;</span>
-        <span class="tl"><span class="t-title">⚡ Initializing envy in ~/my-project</span></span>
+        <span class="tl t-comment"># Values come from a hidden prompt, never your shell history</span>
+        <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy set DATABASE_URL -e production</span></span>
+        <span class="tl"><span class="t-output">Value for DATABASE_URL: </span><span class="t-masked">••••••••••••••••••••</span></span>
+        <span class="tl"><span class="t-success">✓ Added </span><span class="t-key">DATABASE_URL</span><span class="t-output"> in production</span></span>
         <span class="tl">&nbsp;</span>
-        <span class="tl"><span class="t-output">  Create master password: </span><span class="t-masked">••••••••••••</span></span>
-        <span class="tl"><span class="t-output">  Confirm master password: </span><span class="t-masked">••••••••••••</span></span>
+        <span class="tl t-comment"># Run your app with secrets injected (nothing written to disk)</span>
+        <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy run -e production -- npm start</span></span>
         <span class="tl">&nbsp;</span>
-        <span class="tl"><span class="t-success">  ✓ Encrypted store created</span></span>
-        <span class="tl"><span class="t-success">  ✓ Environments: development, staging, production</span></span>
-        <span class="tl"><span class="t-success">  ✓ Added .envy/store.enc to .gitignore</span></span>
+        <span class="tl t-comment"># Catch config drift before it reaches production</span>
+        <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy diff staging production --exit-code</span></span>
+        <span class="tl"><span class="t-warn">- FEATURE_FLAGS_URL</span><span class="t-output"> only in staging</span></span>
+        <span class="tl"><span class="t-success">+ SENTRY_DSN</span><span class="t-output"> only in production</span></span>
         <span class="tl">&nbsp;</span>
-        <span class="tl t-comment"># Store a secret (encrypted with AES-256)</span>
-        <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy set DATABASE_URL postgres://user:pass@db.prod.com/app --env production</span></span>
-        <span class="tl"><span class="t-output">  Master password: </span><span class="t-masked">••••••••••••</span></span>
-        <span class="tl">&nbsp;</span>
-        <span class="tl"><span class="t-success">  ✓ </span><span class="t-key">DATABASE_URL</span><span class="t-output"> → </span><span class="t-masked">[encrypted] in production</span></span>
-        <span class="tl">&nbsp;</span>
-        <span class="tl t-comment"># List secrets (values safely masked)</span>
-        <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy list --env production</span></span>
-        <span class="tl"><span class="t-output">  Master password: </span><span class="t-masked">••••••••••••</span></span>
-        <span class="tl">&nbsp;</span>
-        <span class="tl"><span class="t-title">  Environment: </span><span class="t-val">production</span><span class="t-output"> (3 secrets)</span></span>
-        <span class="tl">&nbsp;</span>
-        <span class="tl"><span class="t-key">  API_KEY</span><span class="t-output"> = </span><span class="t-masked">sk**************23</span></span>
-        <span class="tl"><span class="t-key">  APP_NAME</span><span class="t-output"> = </span><span class="t-masked">my**app</span></span>
-        <span class="tl"><span class="t-key">  DATABASE_URL</span><span class="t-output"> = </span><span class="t-masked">po**********************************pp</span></span>
-        <span class="tl">&nbsp;</span>
-        <span class="tl t-comment"># Compare dev vs production — find missing keys</span>
-        <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy diff development production</span></span>
-        <span class="tl">&nbsp;</span>
-        <span class="tl"><span class="t-title">  development</span><span class="t-output"> vs </span><span class="t-title">production</span></span>
-        <span class="tl">&nbsp;</span>
-        <span class="tl"><span class="t-success">  + SENTRY_DSN</span><span class="t-output"> (only in production)</span></span>
-        <span class="tl"><span class="t-warn">  ~ DATABASE_URL</span><span class="t-output"> (values differ)</span></span>
-        <span class="tl">&nbsp;</span>
-        <span class="tl t-comment"># Audit git history for leaked secrets</span>
+        <span class="tl t-comment"># Scan every commit on every branch for leaked credentials</span>
         <span class="tl"><span class="t-prompt">$ </span><span class="t-cmd">envy audit</span></span>
-        <span class="tl"><span class="t-title">  🔍 Scanning git history for secrets...</span></span>
-        <span class="tl">&nbsp;</span>
-        <span class="tl"><span class="t-success">  ✓ No secrets found in git history!</span></span>
+        <span class="tl"><span class="t-warn">● AWS access key ID</span><span class="t-output">  [aws-access-key-id]</span></span>
+        <span class="tl"><span class="t-output">    config/deploy.yml:12</span></span>
+        <span class="tl"><span class="t-output">    commit 3f9c2a1b7d4e</span></span>
+        <span class="tl"><span class="t-output">    match  </span><span class="t-masked">AKIA********</span></span>
       </div>
     </div>
   </div>
@@ -430,8 +422,8 @@
     <div class="features-grid">
       <div class="feature-card">
         <div class="feature-icon">🔒</div>
-        <div class="feature-title">AES-256-GCM Encryption</div>
-        <div class="feature-desc">Military-grade encryption with PBKDF2 key derivation. 100,000 iterations. Unique salt per store. Your master password never touches disk.</div>
+        <div class="feature-title">Argon2id + AES-256-GCM</div>
+        <div class="feature-desc">Memory-hard key derivation (RFC 9106) and authenticated encryption. The header is authenticated too, so the file can't be tampered with or downgraded. Writes are atomic.</div>
       </div>
       <div class="feature-card">
         <div class="feature-icon">🌍</div>
@@ -441,22 +433,22 @@
       <div class="feature-card">
         <div class="feature-icon">🔍</div>
         <div class="feature-title">Git Audit</div>
-        <div class="feature-desc">Scan your entire git history for accidentally committed .env files or hardcoded secrets. Detects AWS keys, GitHub tokens, Stripe keys, and more.</div>
+        <div class="feature-desc">Scan every commit on every branch for AWS, GitHub, Stripe, OpenAI, Anthropic and Slack tokens, private keys and committed .env files. Matches are redacted. Use --staged as a pre-commit hook.</div>
       </div>
       <div class="feature-card">
         <div class="feature-icon">📋</div>
         <div class="feature-title">Environment Diff</div>
-        <div class="feature-desc">Compare two environments side by side. Instantly spot missing keys, mismatched values, or config drift before it causes production incidents.</div>
+        <div class="feature-desc">Spot keys missing from one environment before they cause an incident. With --exit-code it fails your CI pipeline. Values are never printed.</div>
       </div>
       <div class="feature-card">
-        <div class="feature-icon">📥</div>
-        <div class="feature-title">Import / Export</div>
-        <div class="feature-desc">Seamlessly migrate from existing .env files. Export back when you need to. Works with dotenv, direnv, and any tool that reads .env format.</div>
+        <div class="feature-icon">▶</div>
+        <div class="feature-title">envy run</div>
+        <div class="feature-desc">Start any command with secrets injected as environment variables, with no plaintext .env on disk. Import existing .env files in one step, and generate .env.example with --template.</div>
       </div>
       <div class="feature-card">
         <div class="feature-icon">⚡</div>
         <div class="feature-title">Single Binary</div>
-        <div class="feature-desc">No runtime. No Docker. No npm install. One binary written in Go. Instant startup. Works on macOS, Linux, and Windows. Zero dependencies.</div>
+        <div class="feature-desc">One static Go binary for macOS, Linux and Windows on amd64 and arm64. No runtime, no daemon, no cloud account. Releases ship with SHA-256 checksums.</div>
       </div>
     </div>
   </div>
@@ -466,71 +458,56 @@
 <section class="compare-section">
   <div class="wrap">
     <div class="section-label">Comparison</div>
-    <div class="section-title">How envy stacks up</div>
+    <div class="section-title">envy vs. plaintext .env files</div>
     <div style="overflow-x: auto;">
       <table class="compare-table">
         <thead>
           <tr>
-            <th>Feature</th>
+            <th>Capability</th>
             <th class="hl">envy</th>
-            <th>dotenv</th>
-            <th>direnv</th>
-            <th>1Password CLI</th>
+            <th>.env files</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>Encryption</td>
-            <td class="hl"><span class="yes">✓ AES-256</span></td>
-            <td><span class="no">✗</span></td>
-            <td><span class="no">✗</span></td>
-            <td><span class="yes">✓</span></td>
-          </tr>
-          <tr>
-            <td>Multi-environment</td>
+            <td>Encrypted and tamper-evident at rest</td>
             <td class="hl"><span class="yes">✓</span></td>
             <td><span class="no">✗</span></td>
-            <td><span class="yes">✓</span></td>
-            <td><span class="yes">✓</span></td>
           </tr>
           <tr>
-            <td>Git audit</td>
+            <td>All environments in one place</td>
             <td class="hl"><span class="yes">✓</span></td>
-            <td><span class="no">✗</span></td>
-            <td><span class="no">✗</span></td>
+            <td><span class="no">✗ one file each</span></td>
+          </tr>
+          <tr>
+            <td>Run an app without a plaintext file on disk</td>
+            <td class="hl"><span class="yes">✓ envy run</span></td>
             <td><span class="no">✗</span></td>
           </tr>
           <tr>
-            <td>Env diff</td>
-            <td class="hl"><span class="yes">✓</span></td>
-            <td><span class="no">✗</span></td>
-            <td><span class="no">✗</span></td>
+            <td>Detect missing keys between environments</td>
+            <td class="hl"><span class="yes">✓ envy diff</span></td>
             <td><span class="no">✗</span></td>
           </tr>
           <tr>
-            <td>Single binary</td>
-            <td class="hl"><span class="yes">✓</span></td>
+            <td>Find secrets already leaked in git</td>
+            <td class="hl"><span class="yes">✓ envy audit</span></td>
             <td><span class="no">✗</span></td>
-            <td><span class="yes">✓</span></td>
-            <td><span class="yes">✓</span></td>
           </tr>
           <tr>
-            <td>Free & open source</td>
-            <td class="hl"><span class="yes">✓ MIT</span></td>
-            <td><span class="yes">✓</span></td>
-            <td><span class="yes">✓</span></td>
-            <td><span class="no">✗ paid</span></td>
-          </tr>
-          <tr>
-            <td>No cloud required</td>
+            <td>Works offline, no account</td>
             <td class="hl"><span class="yes">✓</span></td>
             <td><span class="yes">✓</span></td>
-            <td><span class="yes">✓</span></td>
-            <td><span class="no">✗</span></td>
           </tr>
         </tbody>
       </table>
     </div>
+    <p style="color:var(--text2);font-size:13px;margin-top:20px;line-height:1.7">
+      Need per-user keys, KMS integration or organisation-wide access control? Look at
+      <a href="https://github.com/getsops/sops" style="color:var(--cyan)">SOPS</a>,
+      <a href="https://dotenvx.com" style="color:var(--cyan)">dotenvx</a> or a hosted secrets manager.
+      envy is built for individual developers and small teams who want strong local encryption without running a service.
+    </p>
   </div>
 </section>
 
@@ -541,34 +518,26 @@
     <div class="section-title">Get started in 30 seconds</div>
 
     <div class="install-tabs">
-      <button class="tab-btn active" onclick="showTab('curl')">curl</button>
-      <button class="tab-btn" onclick="showTab('brew')">brew</button>
-      <button class="tab-btn" onclick="showTab('go')">go</button>
-      <button class="tab-btn" onclick="showTab('win')">windows</button>
+      <button class="tab-btn active" onclick="showTab('curl', this)">macOS / Linux</button>
+      <button class="tab-btn" onclick="showTab('go', this)">go install</button>
+      <button class="tab-btn" onclick="showTab('win', this)">Windows</button>
     </div>
 
     <div id="tab-curl" class="tab-content active">
       <div class="code-block">
         <button class="code-copy" onclick="copyCode('curl-cmd')">copy</button>
-        <span id="curl-cmd">curl -fsSL https://raw.githubusercontent.com/user/envy/main/install.sh | bash</span>
-      </div>
-    </div>
-    <div id="tab-brew" class="tab-content">
-      <div class="code-block">
-        <button class="code-copy" onclick="copyCode('brew-cmd')">copy</button>
-        <span id="brew-cmd">brew install user/tap/envy</span>
+        <span id="curl-cmd">curl -fsSL https://raw.githubusercontent.com/anastanveer653/envy/main/install.sh | sh</span>
       </div>
     </div>
     <div id="tab-go" class="tab-content">
       <div class="code-block">
         <button class="code-copy" onclick="copyCode('go-cmd')">copy</button>
-        <span id="go-cmd">go install github.com/user/envy@latest</span>
+        <span id="go-cmd">go install github.com/anastanveer653/envy@latest</span>
       </div>
     </div>
     <div id="tab-win" class="tab-content">
       <div class="code-block">
-        <button class="code-copy" onclick="copyCode('win-cmd')">copy</button>
-        <span id="win-cmd">Download envy.exe from the <a href="https://github.com/user/envy/releases" style="color:var(--cyan)">releases page</a></span>
+        <span id="win-cmd">Download envy_&lt;version&gt;_windows_amd64.zip from the <a href="https://github.com/anastanveer653/envy/releases" style="color:var(--cyan)">releases page</a> and add envy.exe to your PATH</span>
       </div>
     </div>
   </div>
@@ -580,7 +549,7 @@
     <h2 class="cta-title">Stop leaking secrets.</h2>
     <p class="cta-sub">Join developers who manage their .env files the right way.</p>
     <div class="hero-btns" style="justify-content:center">
-      <a href="https://github.com/user/envy" class="btn-primary">
+      <a href="https://github.com/anastanveer653/envy" class="btn-primary">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
         Star on GitHub
       </a>
@@ -592,9 +561,9 @@
 <footer>
   <div class="wrap">
     <p>envy — MIT License — Built with Go ·
-      <a href="https://github.com/user/envy">GitHub</a> ·
-      <a href="https://github.com/user/envy/issues">Issues</a> ·
-      <a href="https://github.com/user/envy/blob/main/CONTRIBUTING.md">Contributing</a>
+      <a href="https://github.com/anastanveer653/envy">GitHub</a> ·
+      <a href="https://github.com/anastanveer653/envy/issues">Issues</a> ·
+      <a href="https://github.com/anastanveer653/envy/blob/main/CONTRIBUTING.md">Contributing</a>
     </p>
   </div>
 </footer>
@@ -621,11 +590,11 @@ function copyCode(id) {
   });
 }
 
-function showTab(name) {
+function showTab(name, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  event.target.classList.add('active');
+  btn.classList.add('active');
 }
 </script>
 </body>
