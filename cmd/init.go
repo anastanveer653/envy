@@ -1,123 +1,103 @@
 package cmd
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"github.com/anastanveer653/envy/internal/env"
+
+	"github.com/anastanveer653/envy/internal/store"
+	"github.com/anastanveer653/envy/internal/ui"
 )
 
-var initCmd = &cobra.Command{
-	Use:   "init",
-	Short: "Initialize envy in your project",
-	Long:  "Set up encrypted secret management in the current directory",
-	RunE:  runInit,
+const gitignoreEntry = store.Dir + "/"
+
+func newInitCmd(a *app) *cobra.Command {
+	var envs []string
+	var noGitignore bool
+
+	cmd := &cobra.Command{
+		Use:   "init",
+		Short: "Create an encrypted store in the current directory",
+		Long: `Create .envy/store.enc in the current directory, protected by a new master
+password, and add .envy/ to .gitignore.
+
+Set ENVY_PASSWORD to initialise non-interactively.`,
+		Example: `  envy init
+  envy init --envs dev,prod`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cwd, err := os.Getwd()
+			if err != nil {
+				return err
+			}
+			path := store.PathIn(cwd)
+			if _, err := os.Stat(path); err == nil {
+				return store.ErrExists
+			}
+
+			pw, err := a.newPassword(envPassword, "Create master password")
+			if err != nil {
+				return err
+			}
+			defer clear(pw)
+
+			if _, err := store.Create(path, pw, envs...); err != nil {
+				return err
+			}
+			ui.Success(a.stderr, "Created %s", filepath.Join(store.Dir, store.FileName))
+			ui.Success(a.stderr, "Environments: %s", strings.Join(envs, ", "))
+
+			if !noGitignore {
+				added, err := ensureGitignored(filepath.Join(cwd, ".gitignore"))
+				if err != nil {
+					ui.Warn(a.stderr, "Could not update .gitignore: %v", err)
+				} else if added {
+					ui.Success(a.stderr, "Added %s to .gitignore", gitignoreEntry)
+				}
+			}
+			fmt.Fprintf(a.stderr, "\n%s\n", ui.Dim("Next: envy set KEY   or   envy import .env"))
+			return nil
+		},
+	}
+	cmd.Flags().StringSliceVar(&envs, "envs", []string{"development", "staging", "production"}, "environments to create")
+	cmd.Flags().BoolVar(&noGitignore, "no-gitignore", false, "do not modify .gitignore")
+	return cmd
 }
 
-func runInit(cmd *cobra.Command, args []string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
-	}
-
-	envyDir := filepath.Join(cwd, env.EnvyDir)
-	storeFile := filepath.Join(envyDir, env.StoreFile)
-
-	cyan := color.New(color.FgCyan, color.Bold).SprintFunc()
-	green := color.New(color.FgGreen, color.Bold).SprintFunc()
-	yellow := color.New(color.FgYellow).SprintFunc()
-	dim := color.New(color.Faint).SprintFunc()
-
-	if _, err := os.Stat(storeFile); err == nil {
-		fmt.Printf("%s envy is already initialized in this project\n", yellow("⚠"))
-		return nil
-	}
-
-	fmt.Printf("\n%s Initializing envy in %s\n\n", cyan("⚡"), dim(cwd))
-
-	password, err := env.PromptPassword("  Create master password: ")
-	if err != nil {
-		return err
-	}
-
-	if len(password) < 8 {
-		return fmt.Errorf("password must be at least 8 characters")
-	}
-
-	confirm, err := env.PromptPassword("  Confirm master password: ")
-	if err != nil {
-		return err
-	}
-
-	if password != confirm {
-		return fmt.Errorf("passwords do not match")
-	}
-
-	// Create the store with default environments
-	store, err := env.NewStore(cwd, password)
-	if err != nil {
-		return err
-	}
-
-	// Initialize with default environments
-	defaultEnvs := []string{"development", "staging", "production"}
-	for _, e := range defaultEnvs {
-		if err := store.Set(e, "APP_NAME", "my-app", "Application name"); err != nil {
-			return err
-		}
-	}
-
-	// Add .envy to .gitignore
-	gitignorePath := filepath.Join(cwd, ".gitignore")
-	addToGitignore(gitignorePath)
-
-	// Create .envy/.gitkeep so directory is tracked but store isn't
-	if err := os.MkdirAll(envyDir, 0700); err != nil {
-		return err
-	}
-
-	fmt.Printf("\n  %s Encrypted store created\n", green("✓"))
-	fmt.Printf("  %s Environments: development, staging, production\n", green("✓"))
-	fmt.Printf("  %s Added .envy/store.enc to .gitignore\n\n", green("✓"))
-	fmt.Printf("  %s\n\n", dim("Run 'envy set KEY value' to add your first secret"))
-
-	return nil
-}
-
-func addToGitignore(path string) {
-	entry := "\n# envy secrets store\n.envy/store.enc\n"
-
+// ensureGitignored appends the store directory to .gitignore unless an
+// equivalent line is already present.
+func ensureGitignored(path string) (bool, error) {
 	content, err := os.ReadFile(path)
-	if err == nil {
-		if contains(string(content), ".envy/store.enc") {
-			return
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return false, err
+	}
+	sc := bufio.NewScanner(strings.NewReader(string(content)))
+	for sc.Scan() {
+		switch strings.TrimSpace(sc.Text()) {
+		case store.Dir, gitignoreEntry, "/" + store.Dir, "/" + gitignoreEntry:
+			return false, nil
 		}
 	}
 
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	var b strings.Builder
+	if len(content) > 0 && !strings.HasSuffix(string(content), "\n") {
+		b.WriteString("\n")
+	}
+	if len(content) > 0 {
+		b.WriteString("\n")
+	}
+	b.WriteString("# envy encrypted secret store\n" + gitignoreEntry + "\n")
+
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
-		return
+		return false, err
 	}
 	defer f.Close()
-	f.WriteString(entry)
+	_, err = f.WriteString(b.String())
+	return err == nil, err
 }
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsStr(s, substr))
-}
-
-func containsStr(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
-
-
-
-
