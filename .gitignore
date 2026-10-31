@@ -1,16 +1,20 @@
 # Binaries
-envy
-envy.exe
+/envy
+/envy.exe
 dist/
 
-# Test artifacts
-*.enc
+# Coverage
+coverage.out
+coverage.html
+
+# Local envy stores and dotenv files
 .envy/
+.env
+.env.*
+!.env.example
 
-# Go
-vendor/
-*.test
-
-# OS
+# Editors and OS
+.idea/
+.vscode/
 .DS_Store
 Thumbs.db

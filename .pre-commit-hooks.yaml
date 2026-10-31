@@ -1,0 +1,7 @@
+- id: envy-audit
+  name: envy audit
+  description: Block commits that add .env files or leaked credentials.
+  entry: envy audit --staged
+  language: golang
+  pass_filenames: false
+  always_run: true
