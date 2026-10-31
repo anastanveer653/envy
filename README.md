@@ -14,7 +14,6 @@
 [![CI](https://github.com/anastanveer653/envy/actions/workflows/ci.yml/badge.svg)](https://github.com/anastanveer653/envy/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/anastanveer653/envy?color=00b4d8)](https://github.com/anastanveer653/envy/releases)
 [![Go](https://img.shields.io/github/go-mod/go-version/anastanveer653/envy?color=00b4d8)](go.mod)
-[![Go Report Card](https://goreportcard.com/badge/github.com/anastanveer653/envy)](https://goreportcard.com/report/github.com/anastanveer653/envy)
 [![License: MIT](https://img.shields.io/badge/license-MIT-00b4d8)](LICENSE)
 
 </div>
