@@ -3,173 +3,217 @@
 ```
   ███████╗███╗   ██╗██╗   ██╗██╗   ██╗
   ██╔════╝████╗  ██║██║   ██║╚██╗ ██╔╝
-  █████╗  ██╔██╗ ██║██║   ██║ ╚████╔╝ 
-  ██╔══╝  ██║╚██╗██║╚██╗ ██╔╝  ╚██╔╝  
-  ███████╗██║ ╚████║ ╚████╔╝    ██║   
-  ╚══════╝╚═╝  ╚═══╝  ╚═══╝     ╚═╝   
+  █████╗  ██╔██╗ ██║██║   ██║ ╚████╔╝
+  ██╔══╝  ██║╚██╗██║╚██╗ ██╔╝  ╚██╔╝
+  ███████╗██║ ╚████║ ╚████╔╝    ██║
+  ╚══════╝╚═╝  ╚═══╝  ╚═══╝     ╚═╝
 ```
 
-**Smart `.env` manager for developers**
+**Encrypted, multi-environment secrets for your projects. One binary, no cloud.**
 
-[![Release](https://img.shields.io/github/v/release/anastanveer653/envy?style=flat-square&color=00b4d8)](https://github.com/anastanveer653/envy/releases)
-[![Go Version](https://img.shields.io/badge/go-1.21+-00b4d8?style=flat-square)](https://go.dev)
-[![License](https://img.shields.io/badge/license-MIT-00b4d8?style=flat-square)](LICENSE)
-[![Stars](https://img.shields.io/github/stars/anastanveer653/envy?style=flat-square&color=00b4d8)](https://github.com/anastanveer653/envy/stargazers)
+[![CI](https://github.com/anastanveer653/envy/actions/workflows/ci.yml/badge.svg)](https://github.com/anastanveer653/envy/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/anastanveer653/envy?color=00b4d8)](https://github.com/anastanveer653/envy/releases)
+[![Go](https://img.shields.io/github/go-mod/go-version/anastanveer653/envy?color=00b4d8)](go.mod)
+[![Go Report Card](https://goreportcard.com/badge/github.com/anastanveer653/envy)](https://goreportcard.com/report/github.com/anastanveer653/envy)
+[![License: MIT](https://img.shields.io/badge/license-MIT-00b4d8)](LICENSE)
 
 </div>
 
----
+envy replaces the pile of plaintext `.env`, `.env.staging` and `.env.production`
+files in your project with one authenticated-encrypted store. It runs your app
+with the right secrets injected, tells you when production is missing a key, and
+scans your git history for credentials that already leaked.
 
-## Why envy?
+```console
+$ envy init
+Create master password: ••••••••••••
+✓ Created .envy/store.enc
+✓ Environments: development, staging, production
+✓ Added .envy/ to .gitignore
 
-Every developer has been here:
+$ envy import .env.production -e production
+✓ Imported .env.production into production: 14 added, 0 updated, 0 skipped
 
-- 😅 Accidentally committed `.env` to GitHub
-- 😰 Sent API keys over Slack "just this once"
-- 😤 Lost track of which secrets are in dev vs production
-- 🤦 `.env.example` is 3 months out of date
+$ envy run -e production -- ./server        # secrets go to the process, never to disk
 
-**envy** fixes all of this. One CLI tool. AES-256 encryption. Zero config.
+$ envy diff staging production --exit-code
+- FEATURE_FLAGS_URL only in staging
++ SENTRY_DSN only in production
 
----
+1 key only in staging, 1 key only in production
+12 shared keys with different values
+
+$ envy audit
+● AWS access key ID  [aws-access-key-id]
+    config/deploy.yml:12
+    commit 3f9c2a1b7d4e
+    match  AKIA********
+✗ 1 issue found
+```
 
 ## Features
 
-- 🔒 **AES-256-GCM encryption** — military-grade, password-derived keys
-- 🌍 **Multi-environment** — dev, staging, prod, any custom environment
-- 🔍 **Git audit** — scan your entire git history for leaked secrets
-- 📋 **Smart diff** — compare environments to spot missing/mismatched keys
-- 📥 **Import/Export** — seamlessly convert from/to plain `.env` files
-- 🚀 **Single binary** — no runtime, no Docker, no dependencies
-- ⚡ **Fast** — written in Go, instant startup
-
----
+- **Strong encryption at rest.** AES-256-GCM with a key derived by Argon2id
+  (RFC 9106). The file header is authenticated too, so the KDF cost can't be
+  quietly downgraded. See the [threat model](SECURITY.md).
+- **Environments built in.** Keep `development`, `staging`, `production`, or any
+  others in one store. Clone one with `envy envs add qa --from staging`.
+- **`envy run`.** Inject secrets into any command's environment instead of
+  writing a `.env` file.
+- **`envy diff`.** Catch drift between environments before you deploy. With
+  `--exit-code` it fails CI.
+- **`envy audit`.** Scan every commit on every branch for AWS, GitHub, GitLab,
+  Stripe, OpenAI, Anthropic, Slack, Google, npm, Twilio and SendGrid tokens,
+  private keys and connection strings, plus `.env` files that were committed or
+  aren't ignored. Matches are redacted, and `--staged` makes it fast enough for a
+  pre-commit hook.
+- **Script-friendly.** `envy get` prints the bare value, and `--json` output and
+  meaningful exit codes are available. `ENVY_PASSWORD` covers non-interactive use.
+- **Safe defaults.** Hidden prompts keep values out of shell history, writes are
+  atomic, names are validated, `export` won't overwrite a file without
+  `--force`, and `run` strips `ENVY_PASSWORD` from the child process.
+- **Single static binary** for Linux, macOS and Windows on amd64 and arm64.
 
 ## Install
 
-**macOS / Linux (one line):**
+**macOS / Linux** (verifies the SHA-256 checksum before installing):
+
 ```bash
-curl -fsSL https://raw.githubusercontent.com/anastanveer653/envy/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/anastanveer653/envy/main/install.sh | sh
 ```
 
-**Homebrew:**
-```bash
-brew install user/tap/envy
-```
+**With Go:**
 
-**Go:**
 ```bash
 go install github.com/anastanveer653/envy@latest
 ```
 
-**Windows:** Download from [releases page](https://github.com/anastanveer653/envy/releases)
+**Windows:** download `envy_<version>_windows_amd64.zip` from
+[Releases](https://github.com/anastanveer653/envy/releases), extract `envy.exe`
+and add it to your `PATH`.
 
----
-
-## Quick Start
+## Quick start
 
 ```bash
-# 1. Initialize in your project
 cd my-project
-envy init
+envy init                                  # create the store and set a master password
 
-# 2. Add your secrets
-envy set DATABASE_URL postgres://localhost/mydb
-envy set API_KEY sk-abc123 --env production
+envy set DATABASE_URL                      # prompts for the value (hidden)
+envy set STRIPE_KEY -e production --note "live key, rotate quarterly"
+envy set TLS_KEY -e production < server.key
 
-# 3. List secrets (values safely masked)
-envy list
-envy list --env production
+envy list -e production                    # names and notes only, never values
+envy get DATABASE_URL                      # prints the value
+envy run -- npm run dev                    # start your app with secrets injected
 
-# 4. Get a secret
-envy get DATABASE_URL
-
-# 5. Export to .env file when needed
-envy export --env production --output .env
+envy export --template -o .env.example --force   # keep the example file honest
 ```
 
----
+The environment comes from `--env/-e`, then `$ENVY_ENV`, then `development`.
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `envy init` | Initialize envy in your project |
-| `envy set KEY value` | Store an encrypted secret |
-| `envy get KEY` | Retrieve a secret value |
-| `envy list` | List all keys (values masked) |
-| `envy delete KEY` | Delete a secret |
-| `envy diff dev prod` | Compare two environments |
-| `envy push <env>` | Export secrets to `.env.<env>` file |
-| `envy pull <env>` | Import from `.env.<env>` file |
-| `envy import` | Import from existing `.env` file |
-| `envy export` | Export to plain `.env` file |
-| `envy audit` | Scan git history for leaked secrets |
+| Command | What it does |
+|---|---|
+| `envy init [--envs a,b,c]` | Create `.envy/store.enc` and add `.envy/` to `.gitignore` |
+| `envy set KEY [VALUE] [-n note]` | Add or update a secret. Without VALUE it reads a hidden prompt or stdin |
+| `envy get KEY` | Print a secret's value |
+| `envy list [--json]` | List key names, notes and update times |
+| `envy delete KEY...` | Delete secrets |
+| `envy envs` / `envs add NAME [--from ENV]` / `envs remove NAME` | Manage environments |
+| `envy diff A B [--exit-code]` | Compare the key sets of two environments |
+| `envy run -- CMD [ARGS]` | Run a command with secrets in its environment |
+| `envy import [FILE] [--skip-existing]` | Import a `.env` file (default `.env`) |
+| `envy export [-o FILE] [--template] [--force]` | Write `.env` format to stdout or a file |
+| `envy passwd` | Change the master password |
+| `envy audit [PATH] [--staged] [--json]` | Scan a repository for leaked secrets |
+| `envy completion bash\|zsh\|fish\|powershell` | Generate shell completions |
 
----
+Run `envy <command> --help` for every flag and more examples.
 
-## How It Works
+## Using envy in CI
+
+```yaml
+# .github/workflows/deploy.yml
+- run: go install github.com/anastanveer653/envy@latest
+
+- name: Fail if production is missing keys that staging has
+  run: envy diff staging production --exit-code
+  env:
+    ENVY_PASSWORD: ${{ secrets.ENVY_PASSWORD }}
+
+- name: Block leaked credentials
+  run: envy audit
+```
+
+### Pre-commit hook
+
+With [pre-commit](https://pre-commit.com):
+
+```yaml
+repos:
+  - repo: https://github.com/anastanveer653/envy
+    rev: v1.0.0
+    hooks:
+      - id: envy-audit
+```
+
+Or with a plain git hook:
+
+```bash
+printf '#!/bin/sh\nexec envy audit --staged\n' > .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+## How it works
 
 ```
-Your Secret → PBKDF2 Key Derivation → AES-256-GCM Encryption → .envy/store.enc
-                    ↑
-              Master Password
-              (never stored)
+master password ──Argon2id (64 MiB, t=3, p=4, random salt)──▶ 256-bit key
+                                                                  │
+{format, kdf params, salt} ──── authenticated as GCM AAD ───┐     ▼
+all environments as JSON ───────────────────────────────────▶ AES-256-GCM ──▶ .envy/store.enc
 ```
 
-1. Your master password is never stored — only a hash for verification
-2. Each secret is encrypted using a unique salt + PBKDF2 key derivation
-3. AES-256-GCM provides both encryption and authentication
-4. The store file is safe to commit to version control (optional)
+- The whole store is sealed as one unit, so the file reveals neither key names
+  nor how many secrets it holds.
+- Each save uses a fresh random nonce and writes atomically: temp file, fsync,
+  then rename.
+- No password hash is stored. A wrong password simply fails GCM authentication.
+- The format is versioned. Stores from envy 0.x (PBKDF2) are upgraded the first
+  time you open them.
 
----
+Read [SECURITY.md](SECURITY.md) for the threat model: what envy protects against
+and what it doesn't.
 
-## vs. alternatives
+## When to use something else
 
-| Feature | envy | dotenv | direnv | 1Password CLI |
-|---------|------|--------|--------|---------------|
-| Encryption | ✅ AES-256 | ❌ | ❌ | ✅ |
-| Multi-environment | ✅ | ❌ | ✅ | ✅ |
-| Git audit | ✅ | ❌ | ❌ | ❌ |
-| Env diff | ✅ | ❌ | ❌ | ❌ |
-| Single binary | ✅ | ❌ | ✅ | ✅ |
-| Free & open source | ✅ | ✅ | ✅ | ❌ |
-| No cloud required | ✅ | ✅ | ✅ | ❌ |
+envy is built for individual developers and small teams who want strong local
+encryption without running a service. Other tools fit better when:
 
----
+- **Your team already uses a cloud KMS or age keys.** [SOPS](https://github.com/getsops/sops)
+  encrypts values with per-recipient keys, which avoids a shared password.
+- **You want public-key encrypted `.env` files in git.** [dotenvx](https://dotenvx.com)
+  lets CI decrypt with a private key.
+- **You need access control, rotation and audit logs across an organisation.**
+  Use a secrets manager such as HashiCorp Vault, Infisical, Doppler or 1Password.
 
-## Security
+## Project layout
 
-- **AES-256-GCM** — authenticated encryption, detects tampering
-- **PBKDF2** — 100,000 iterations, makes brute force infeasible
-- **Unique salt per store** — prevents rainbow table attacks
-- **Zero network requests** — everything stays on your machine
-- **File permissions** — store written as `0600` (owner read/write only)
-
-To report a security vulnerability, please email security@example.com (do not open a public issue).
-
----
+```
+cmd/              CLI commands (cobra), with end-to-end tests
+internal/crypto   Argon2id + AES-256-GCM, legacy decryption
+internal/store    encrypted store format, atomic writes, validation
+internal/dotenv   .env parsing and round-trip-safe quoting
+internal/audit    secret detection rules and git history scanning
+internal/ui       colors, prompts, TTY handling
+```
 
 ## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
-
-```bash
-git clone https://github.com/anastanveer653/envy
-cd envy
-go mod download
-go build .
-./envy --help
-```
-
----
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for
+setup, tests and how to add an audit rule. Report security issues privately as
+described in [SECURITY.md](SECURITY.md).
 
 ## License
 
-MIT © [Anas Tanveer](https://github.com/anastanveer653)
-
----
-
-<div align="center">
-  <sub>If envy saves you from a secret leak, consider giving it a ⭐</sub>
-</div>
+[MIT](LICENSE) © [Anas Tanveer](https://github.com/anastanveer653)
