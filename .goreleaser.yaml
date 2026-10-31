@@ -1,0 +1,37 @@
+version: 2
+project_name: envy
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env: [CGO_ENABLED=0]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w -X main.version={{ .Version }} -X main.commit={{ .Commit }} -X main.date={{ .Date }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files: [LICENSE, README.md]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: github
+  sort: asc
+  filters:
+    exclude: ["^docs:", "^test:", "^ci:", "^chore:"]
+
+release:
+  footer: |
+    **Install:** `curl -fsSL https://raw.githubusercontent.com/anastanveer653/envy/main/install.sh | sh`
+    or `go install github.com/anastanveer653/envy@{{ .Tag }}`. Verify downloads against `checksums.txt`.
