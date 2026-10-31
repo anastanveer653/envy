@@ -179,7 +179,7 @@ func Open(path string, password []byte) (*Store, error) {
 	if env.KDF.Alg != kdfName {
 		return nil, fmt.Errorf("unsupported key derivation %q", env.KDF.Alg)
 	}
-	if err := env.KDF.Params.Validate(); err != nil {
+	if err := env.KDF.Validate(); err != nil {
 		return nil, err
 	}
 
